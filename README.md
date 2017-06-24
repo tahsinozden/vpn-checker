@@ -1,7 +1,7 @@
 # vpn-checker
 A small Bash script which checks VPN connection and according to the status of connection, it kills torrent client or starts them.
 
-# how-to-use
+## how-to-use
 You can use the following commands. (assuming that `vpn_checker.sh` script is in Downloads folder) <br />
 ```
  mkdir ~/vpn_checker_folder 
@@ -20,4 +20,4 @@ fi
 ```
 
 In order to stop the script, you can run the following command. <br />
-``` killall vpn_checker.sh ```
+```  killall vpn_checker.sh ```
