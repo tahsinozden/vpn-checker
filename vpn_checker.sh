@@ -28,7 +28,7 @@ function kill_if_alive {
 
 function is_connectedto_internet {
     # check internet connection with google website :)
-    curl -D- > /dev/null --connect-timeout 5 -s http://www.google.com
+    curl -D- > /dev/null --connect-timeout 2 -s http://www.google.com
     if [[ $? == 0 ]]; then
         echo $TRUE
     else
