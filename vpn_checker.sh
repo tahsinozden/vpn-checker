@@ -10,6 +10,7 @@ declare -r FAIL=255
 
 declare -ar SUPPORTED_TORRENT_CLIENTS=($QBITTORRENT $DELUGE) 
 declare -a currentlyRunningTorrentClients=()
+declare -a torrentClientsToBeStarted=()
 declare -r VPN_INTERFACE_NAME="ppp0"
 # in seconds
 declare -r INTERVAL=1
@@ -19,11 +20,14 @@ function kill_if_alive {
     if [[ `ps -ef | grep $processName | grep -v grep | wc -l` > 0 ]]; then
         echo "killing $processName"
         killall $processName
+        return $SUCCESS
     fi
+
+    return $FAIL
 }
 
 function is_connectedto_internet {
-    # check the connection with google website :)
+    # check internet connection with google website :)
     curl -D- > /dev/null -s http://www.google.com
     if [[ $? == 0 ]]; then
         echo $TRUE
@@ -35,8 +39,6 @@ function is_connectedto_internet {
 function is_connectedto_vpn {
     echo `ip link show | grep $VPN_INTERFACE_NAME | grep -v grep | wc -l` 
 }
-
-areVPNClientKilled=$FALSE
 
 while true; 
 do
@@ -55,23 +57,30 @@ do
     if [[ `is_connectedto_internet` == $TRUE ]]; then
         if [[ `is_connectedto_vpn` == 0 ]]; then
             echo "VPN is not connected!."
-            if [[ $areVPNClientKilled == $FALSE ]]; then
+            if [[ ${#currentlyRunningTorrentClients[@]} != 0 ]]; then
                 echo "Killing torrent clients..."
                 for client in ${currentlyRunningTorrentClients[@]};
                 do
                     kill_if_alive "$client"
+                    # result code of kill_if_alive
+                    resCode=$?
+
+                    # check if the process was running and killed
+                    if [[ $resCode == $SUCCESS ]]; then
+                        torrentClientsToBeStarted+=$client
+                    fi
                 done
-                areVPNClientKilled=$TRUE
+                currentlyRunningTorrentClients=()
             fi
         
         else
-            if [[ $areVPNClientKilled == $TRUE ]] && [[ ${#currentlyRunningTorrentClients[@]} != 0 ]]; then
+            if [[ ${#torrentClientsToBeStarted[@]} != 0 ]]; then
                 echo "VPN is connected!. Starting torrent clients..."
                 for client in ${currentlyRunningTorrentClients[@]};
                 do
                     eval "$client" &
                 done
-                areVPNClientKilled=$FALSE
+                torrentClientsToBeStarted=()
             fi
         fi
     else
