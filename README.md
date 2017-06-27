@@ -21,3 +21,5 @@ fi
 
 In order to stop the script, you can run the following command. <br />
 ```  killall vpn_checker.sh ```
+
+Disclaimer: MIT License
