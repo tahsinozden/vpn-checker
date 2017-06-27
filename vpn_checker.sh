@@ -1,13 +1,14 @@
 #!/bin/bash
 
+# this torrent clients' values are the commands for them to run
 declare -r QBITTORRENT="qbittorrent"
 declare -r DELUGE="deluge-gtk"
-declare -r TRUE="true"
-declare -r FALSE="false"
+declare -r TRUE=1
+declare -r FALSE=0
 declare -r SUCCESS=0
 declare -r FAIL=255
 
-declare -ar SUPPORTED_TORRENT_CLIENTS=("qbittorrent" "deluge-gtk") 
+declare -ar SUPPORTED_TORRENT_CLIENTS=($QBITTORRENT $DELUGE) 
 declare -a currentlyRunningTorrentClients=()
 declare -r VPN_INTERFACE_NAME="ppp0"
 # in seconds
@@ -21,12 +22,21 @@ function kill_if_alive {
     fi
 }
 
+function is_connectedto_internet {
+    # check the connection with google website :)
+    curl -D- > /dev/null -s http://www.google.com
+    if [[ $? == 0 ]]; then
+        echo $TRUE
+    else
+        echo $FALSE
+    fi
+}
 
 function is_connectedto_vpn {
     echo `ip link show | grep $VPN_INTERFACE_NAME | grep -v grep | wc -l` 
 }
 
-areVPNClientKilled=0
+areVPNClientKilled=$FALSE
 
 while true; 
 do
@@ -42,24 +52,30 @@ do
         fi
     done
     
-    if [[ `is_connectedto_vpn` == 0 ]]; then
-        if [[ $areVPNClientKilled == 0 ]]; then
-            for client in ${currentlyRunningTorrentClients[@]};
-            do
-                kill_if_alive "$client"
-            done
-            areVPNClientKilled=1
+    if [[ `is_connectedto_internet` == $TRUE ]]; then
+        if [[ `is_connectedto_vpn` == 0 ]]; then
+            echo "VPN is not connected!."
+            if [[ $areVPNClientKilled == $FALSE ]]; then
+                echo "Killing torrent clients..."
+                for client in ${currentlyRunningTorrentClients[@]};
+                do
+                    kill_if_alive "$client"
+                done
+                areVPNClientKilled=$TRUE
+            fi
+        
+        else
+            if [[ $areVPNClientKilled == $TRUE ]] && [[ ${#currentlyRunningTorrentClients[@]} != 0 ]]; then
+                echo "VPN is connected!. Starting torrent clients..."
+                for client in ${currentlyRunningTorrentClients[@]};
+                do
+                    eval "$client" &
+                done
+                areVPNClientKilled=$FALSE
+            fi
         fi
-
-    
     else
-        if [[ $areVPNClientKilled == 1 ]] && [[ ${#currentlyRunningTorrentClients[@]} != 0 ]]; then
-            for client in ${currentlyRunningTorrentClients[@]};
-            do
-                eval "$client" &
-            done
-            areVPNClientKilled=0
-        fi
+        echo "No internet connection!."
     fi
     
     sleep $INTERVAL
