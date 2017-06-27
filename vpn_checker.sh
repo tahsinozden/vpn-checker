@@ -67,7 +67,7 @@ do
 
                     # check if the process was running and killed
                     if [[ $resCode == $SUCCESS ]]; then
-                        torrentClientsToBeStarted+=$client
+                        torrentClientsToBeStarted+=($client)
                     fi
                 done
                 currentlyRunningTorrentClients=()
@@ -76,7 +76,7 @@ do
         else
             if [[ ${#torrentClientsToBeStarted[@]} != 0 ]]; then
                 echo "VPN is connected!. Starting torrent clients..."
-                for client in ${currentlyRunningTorrentClients[@]};
+                for client in ${torrentClientsToBeStarted[@]};
                 do
                     eval "$client" &
                 done
