@@ -11,7 +11,8 @@ declare -r FAIL=255
 declare -ar SUPPORTED_TORRENT_CLIENTS=($QBITTORRENT $DELUGE) 
 declare -a currentlyRunningTorrentClients=()
 declare -a torrentClientsToBeStarted=()
-declare -r VPN_INTERFACE_NAME="ppp0"
+declare -r PPTP_INTERFACE_NAME="ppp0"
+declare -r OPENVPN_INTERFACE_NAME="openvpn"
 # in seconds
 declare -r INTERVAL=1
 
@@ -37,7 +38,13 @@ function is_connectedto_internet {
 }
 
 function is_connectedto_vpn {
-    echo `ip link show | grep $VPN_INTERFACE_NAME | grep -v grep | wc -l` 
+    _pptp=$(ip link show | grep ${PPTP_INTERFACE_NAME} | grep -v grep | wc -l)
+    _openvpn=$(pgrep ${OPENVPN_INTERFACE_NAME} | grep -v grep | wc -l)
+    if [[ ${_pptp} != 0 ]] || [[ ${_openvpn} != 0 ]]; then
+        echo "1"
+        return
+    fi
+    echo "0"
 }
 
 while true; 
